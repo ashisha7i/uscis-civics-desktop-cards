@@ -25,11 +25,9 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # PASS 1: Compiles strictly for M1/M2/M3/M4 Apple Silicon Chips
       - name: Package Mac App (Apple Silicon)
         run: npx electron-packager . "USCIS Civics Flashcards" --platform=darwin --arch=arm64 --out=dist/arm64 --overwrite --icon=icons/liberty.icns
 
-      # PASS 2: Compiles strictly for legacy Intel Core Chips
       - name: Package Mac App (Intel)
         run: npx electron-packager . "USCIS Civics Flashcards" --platform=darwin --arch=x64 --out=dist/x64 --overwrite --icon=icons/liberty.icns
 
@@ -43,7 +41,6 @@ jobs:
           cd dist/x64
           zip -r ../../USCIS-Civics-Flashcards-Mac-Intel.zip .
 
-       Tariffs-safe staging upload loops
       - name: Upload Mac Apple Silicon Zip Artifact
         uses: actions/upload-artifact@v7
         with:
