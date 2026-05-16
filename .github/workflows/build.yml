@@ -2,7 +2,7 @@ name: Build and Release Flashcards
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -91,19 +91,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Fetches full history so git can scan past tags cleanly
 
+      # HARDENED VERSION CALCULATION ENGINE
       - name: Calculate Next Version Tag
         id: versioning
         run: |
-          git fetch --tags
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          CLEAN_TAG=${LATEST_TAG#v}
-          IFS='.' read -r major minor patch <<< "$CLEAN_TAG"
-          NEW_PATCH=$((patch + 1))
-          NEW_TAG="v$major.$minor.$NEW_PATCH"
+          git fetch --tags --force
+          # Filter strictly for tags matching the vX.X.X pattern, sort them by version, and pull the highest one
+          LATEST_TAG=$(git tag -l "v*.*.*" | sort -V | tail -n1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            # If no version tags exist in the entire repository, start clean at v0.0.1
+            NEW_TAG="v0.0.1"
+          else
+            # Strip the 'v' prefix, parse digits, and increment the patch version (+1)
+            CLEAN_TAG=${LATEST_TAG#v}
+            IFS='.' read -r major minor patch <<< "$CLEAN_TAG"
+            NEW_PATCH=$((patch + 1))
+            NEW_TAG="v$major.$minor.$NEW_PATCH"
+          fi
+          
           echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
-          echo "Next release version calculated: $NEW_TAG"
+          echo "Version calculated successfully: $NEW_TAG"
 
       - name: Download Mac Apple Silicon Zip
         uses: actions/download-artifact@v8
@@ -124,7 +134,7 @@ jobs:
           path: .
 
       - name: Update GitHub Release Page
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2   # Pinning back to verified stable release engine
         with:
           tag_name: ${{ steps.versioning.outputs.tag }}
           name: "Desktop Builds ${{ steps.versioning.outputs.tag }}"
