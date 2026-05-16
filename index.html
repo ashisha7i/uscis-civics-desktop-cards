@@ -11,7 +11,7 @@
       --text-muted: #6e6e73;
       --accent: #007aff;
       --success: #34c759;
-      --revisit-color: #af52de; /* Renamed variable */
+      --revisit-color: #af52de;
     }
 
     body {
@@ -94,7 +94,7 @@
     }
     .badge.senior { background: #e67e22; }
     .badge.dynamic { background: #2980b9; }
-    .badge.revisit { background: var(--revisit-color); } /* Renamed class styling */
+    .badge.revisit { background: var(--revisit-color); }
 
     .question-text {
       font-size: 24px;
@@ -224,7 +224,7 @@
           <div class="badge-container" id="frontBadges"></div>
         </div>
         <div class="question-text" id="frontQuestion">Initializing Workspace...</div>
-        <div class="tap-prompt">💡 Click Card or Press SPACE to Reveal Answer</div>
+        <div class="tap-prompt">💡 Space to Flip • Enter / ➔ for Next • ➔ for Back</div>
       </div>
 
       <div class="card-back">
@@ -240,14 +240,14 @@
         
         <div class="answers-container" id="backAnswers"></div>
         
-        <div class="tap-prompt" style="color: rgba(0,0,0,0.3);">Press SPACE or Click to Flip Back</div>
+        <div class="tap-prompt" style="color: rgba(0,0,0,0.3);">Space to Flip • Enter / ➔ for Next • ➔ for Back</div>
       </div>
 
     </div>
   </div>
 
   <div class="controls-toolbar">
-    <button class="btn" id="revisitBtn">📌 Toggle Revisit</button> <button class="btn" id="reviewBtn">🔄 All Questions</button>
+    <button class="btn" id="revisitBtn">📌 Revisit</button> <button class="btn" id="reviewBtn">🔄 All Questions</button>
     <button class="btn primary" id="nextBtn">Next Question →</button>
   </div>
 
@@ -259,7 +259,8 @@
       <span>Always on Top</span>
     </label>
     
-    <span id="revisitCountText">Revisit Bank: 0</span> </div>
+    <span id="revisitCountText">Revisit Bank: 0</span>
+  </div>
 
   <script>
     const { ipcRenderer } = require('electron');
@@ -269,10 +270,12 @@
     let questions = [];
     let currentQ = null;
     let shown = JSON.parse(localStorage.getItem('shown_qs')) || [];
-    
-    // SMART DATA MIGRATION: Pulls from new key, falls back to old 'tricky_qs' if it exists
     let revisit = JSON.parse(localStorage.getItem('revisit_qs')) || JSON.parse(localStorage.getItem('tricky_qs')) || [];
     let isReviewMode = false;
+
+    // SEQUENTIAL BACK-AND-FORTH HISTORY ENGINE VARIABLES
+    let sessionHistory = [];
+    let sessionIndex = -1;
 
     document.getElementById('alwaysOnTopCheck').addEventListener('change', (e) => {
       ipcRenderer.send('set-always-on-top', e.target.checked);
@@ -293,13 +296,50 @@
       document.getElementById('cardViewport').classList.toggle('flipped');
     }
 
+    // LINEAR NAVIGATION CONTROLLERS
+    function moveForward() {
+      if (sessionIndex < sessionHistory.length - 1) {
+        sessionIndex++;
+        currentQ = questions.find(q => q.id === sessionHistory[sessionIndex]);
+        document.getElementById('cardViewport').classList.remove('flipped');
+        renderCurrentQuestion();
+      } else {
+        pickNextQuestion();
+      }
+    }
+
+    function moveBackward() {
+      if (sessionIndex > 0) {
+        sessionIndex--;
+        currentQ = questions.find(q => q.id === sessionHistory[sessionIndex]);
+        document.getElementById('cardViewport').classList.remove('flipped');
+        renderCurrentQuestion();
+      }
+    }
+
+    // KEYBOARD DRIVEN HOTKEY DISPATCH MATRIX
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' || e.key === ' ') {
-        if (document.activeElement && document.activeElement.id === 'alwaysOnTopCheck') {
-          return;
-        }
-        e.preventDefault();
-        toggleCardFlip();
+      if (document.activeElement && document.activeElement.id === 'alwaysOnTopCheck') {
+        return;
+      }
+      
+      switch(e.code) {
+        case 'Space':
+          e.preventDefault();
+          toggleCardFlip();
+          break;
+        case 'Enter':
+          e.preventDefault();
+          moveForward();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          moveForward();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          moveBackward();
+          break;
       }
     });
 
@@ -311,6 +351,8 @@
         if (revisit.length === 0) {
           isReviewMode = false;
           updateControlUI();
+          sessionHistory = [];
+          sessionIndex = -1;
           pickNextQuestion();
           return;
         }
@@ -329,7 +371,11 @@
         }
       }
 
-      renderCurrentQuestion();
+      if (currentQ) {
+        sessionHistory.push(currentQ.id);
+        sessionIndex = sessionHistory.length - 1;
+        renderCurrentQuestion();
+      }
     }
 
     function renderCurrentQuestion() {
@@ -346,7 +392,7 @@
         container.innerHTML = '';
         if (currentQ.senior_65_20) container.innerHTML += `<span class="badge senior">65/20</span>`;
         if (currentQ.dynamic) container.innerHTML += `<span class="badge dynamic">Varies</span>`;
-        if (revisit.includes(currentQ.id)) container.innerHTML += `<span class="badge revisit">Revisit</span>`; // Renamed
+        if (revisit.includes(currentQ.id)) container.innerHTML += `<span class="badge revisit">Revisit</span>`;
       };
       
       buildBadges('frontBadges');
@@ -363,14 +409,14 @@
 
       const pct = Math.round((shown.length / questions.length) * 100);
       document.getElementById('progressText').innerText = `Progress: ${shown.length} / ${questions.length} (${pct}%)`;
-      document.getElementById('revisitCountText').innerText = `Revisit Bank: ${revisit.length}`; // Renamed
+      document.getElementById('revisitCountText').innerText = `Revisit Bank: ${revisit.length}`;
       
-      const rBtn = document.getElementById('revisitBtn'); // Renamed
+      const rBtn = document.getElementById('revisitBtn');
       if (revisit.includes(currentQ.id)) {
-        rBtn.innerText = '📌 Unmark Revisit';
+        rBtn.innerText = '📌 Unmark Revisit'; // Clean operational toggle
         rBtn.style.borderLeft = '3px solid var(--revisit-color)';
       } else {
-        rBtn.innerText = '📌 Mark Revisit';
+        rBtn.innerText = '📌 Revisit';        // Clean operational default
         rBtn.style.borderLeft = 'none';
       }
     }
@@ -378,11 +424,11 @@
     document.getElementById('cardViewport').addEventListener('click', toggleCardFlip);
 
     document.getElementById('nextBtn').addEventListener('click', (e) => {
-      pickNextQuestion();
+      moveForward();
       e.target.blur();
     });
 
-    document.getElementById('revisitBtn').addEventListener('click', (e) => { // Renamed
+    document.getElementById('revisitBtn').addEventListener('click', (e) => {
       if (!currentQ) return;
       if (revisit.includes(currentQ.id)) {
         revisit = revisit.filter(id => id !== currentQ.id);
@@ -401,6 +447,9 @@
       }
       isReviewMode = !isReviewMode;
       updateControlUI();
+      // Reset navigation vectors when switching core study modes
+      sessionHistory = [];
+      sessionIndex = -1;
       pickNextQuestion();
       e.target.blur();
     });
