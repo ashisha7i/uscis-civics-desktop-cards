@@ -11,7 +11,7 @@
       --text-muted: #6e6e73;
       --accent: #007aff;
       --success: #34c759;
-      --tricky-color: #af52de;
+      --revisit-color: #af52de; /* Renamed variable */
     }
 
     body {
@@ -94,7 +94,7 @@
     }
     .badge.senior { background: #e67e22; }
     .badge.dynamic { background: #2980b9; }
-    .badge.tricky { background: var(--tricky-color); }
+    .badge.revisit { background: var(--revisit-color); } /* Renamed class styling */
 
     .question-text {
       font-size: 24px;
@@ -180,6 +180,7 @@
     }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .btn:active { transform: translateY(0); }
+    .btn:focus { outline: none; }
 
     .btn.primary { background: var(--accent); color: white; border: 1px solid var(--accent); }
     .btn.primary:hover { background: #0066d6; }
@@ -223,7 +224,7 @@
           <div class="badge-container" id="frontBadges"></div>
         </div>
         <div class="question-text" id="frontQuestion">Initializing Workspace...</div>
-        <div class="tap-prompt">Click Card to Reveal Answer</div>
+        <div class="tap-prompt">💡 Click Card or Press SPACE to Reveal Answer</div>
       </div>
 
       <div class="card-back">
@@ -239,15 +240,14 @@
         
         <div class="answers-container" id="backAnswers"></div>
         
-        <div class="tap-prompt" style="color: rgba(0,0,0,0.3);">Click Card to Flip Back</div>
+        <div class="tap-prompt" style="color: rgba(0,0,0,0.3);">Press SPACE or Click to Flip Back</div>
       </div>
 
     </div>
   </div>
 
   <div class="controls-toolbar">
-    <button class="btn" id="trickyBtn">📌 Toggle Tricky</button>
-    <button class="btn" id="reviewBtn">🔄 All Questions</button>
+    <button class="btn" id="revisitBtn">📌 Toggle Revisit</button> <button class="btn" id="reviewBtn">🔄 All Questions</button>
     <button class="btn primary" id="nextBtn">Next Question →</button>
   </div>
 
@@ -259,8 +259,7 @@
       <span>Always on Top</span>
     </label>
     
-    <span id="trickyCountText">Tricky Bank: 0</span>
-  </div>
+    <span id="revisitCountText">Revisit Bank: 0</span> </div>
 
   <script>
     const { ipcRenderer } = require('electron');
@@ -270,12 +269,14 @@
     let questions = [];
     let currentQ = null;
     let shown = JSON.parse(localStorage.getItem('shown_qs')) || [];
-    let tricky = JSON.parse(localStorage.getItem('tricky_qs')) || [];
+    
+    // SMART DATA MIGRATION: Pulls from new key, falls back to old 'tricky_qs' if it exists
+    let revisit = JSON.parse(localStorage.getItem('revisit_qs')) || JSON.parse(localStorage.getItem('tricky_qs')) || [];
     let isReviewMode = false;
 
-    // Connect Footer Checkbox State Changes back to Main execution thread via IPC
     document.getElementById('alwaysOnTopCheck').addEventListener('change', (e) => {
       ipcRenderer.send('set-always-on-top', e.target.checked);
+      e.target.blur();
     });
 
     async function init() {
@@ -288,18 +289,32 @@
       }
     }
 
+    function toggleCardFlip() {
+      document.getElementById('cardViewport').classList.toggle('flipped');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.key === ' ') {
+        if (document.activeElement && document.activeElement.id === 'alwaysOnTopCheck') {
+          return;
+        }
+        e.preventDefault();
+        toggleCardFlip();
+      }
+    });
+
     function pickNextQuestion() {
       if (questions.length === 0) return;
       document.getElementById('cardViewport').classList.remove('flipped');
 
       if (isReviewMode) {
-        if (tricky.length === 0) {
+        if (revisit.length === 0) {
           isReviewMode = false;
           updateControlUI();
           pickNextQuestion();
           return;
         }
-        const filtered = questions.filter(q => tricky.includes(q.id));
+        const filtered = questions.filter(q => revisit.includes(q.id));
         currentQ = filtered[Math.floor(Math.random() * filtered.length)];
       } else {
         let remaining = questions.filter(q => !shown.includes(q.id));
@@ -331,7 +346,7 @@
         container.innerHTML = '';
         if (currentQ.senior_65_20) container.innerHTML += `<span class="badge senior">65/20</span>`;
         if (currentQ.dynamic) container.innerHTML += `<span class="badge dynamic">Varies</span>`;
-        if (tricky.includes(currentQ.id)) container.innerHTML += `<span class="badge tricky">Tricky</span>`;
+        if (revisit.includes(currentQ.id)) container.innerHTML += `<span class="badge revisit">Revisit</span>`; // Renamed
       };
       
       buildBadges('frontBadges');
@@ -348,43 +363,46 @@
 
       const pct = Math.round((shown.length / questions.length) * 100);
       document.getElementById('progressText').innerText = `Progress: ${shown.length} / ${questions.length} (${pct}%)`;
-      document.getElementById('trickyCountText').innerText = `Tricky Bank: ${tricky.length}`;
+      document.getElementById('revisitCountText').innerText = `Revisit Bank: ${revisit.length}`; // Renamed
       
-      const tBtn = document.getElementById('trickyBtn');
-      if (tricky.includes(currentQ.id)) {
-        tBtn.innerText = '📌 Unmark Tricky';
-        tBtn.style.borderLeft = '3px solid var(--tricky-color)';
+      const rBtn = document.getElementById('revisitBtn'); // Renamed
+      if (revisit.includes(currentQ.id)) {
+        rBtn.innerText = '📌 Unmark Revisit';
+        rBtn.style.borderLeft = '3px solid var(--revisit-color)';
       } else {
-        tBtn.innerText = '📌 Mark Tricky';
-        tBtn.style.borderLeft = 'none';
+        rBtn.innerText = '📌 Mark Revisit';
+        rBtn.style.borderLeft = 'none';
       }
     }
 
-    document.getElementById('cardViewport').addEventListener('click', () => {
-      document.getElementById('cardViewport').classList.toggle('flipped');
+    document.getElementById('cardViewport').addEventListener('click', toggleCardFlip);
+
+    document.getElementById('nextBtn').addEventListener('click', (e) => {
+      pickNextQuestion();
+      e.target.blur();
     });
 
-    document.getElementById('nextBtn').addEventListener('click', pickNextQuestion);
-
-    document.getElementById('trickyBtn').addEventListener('click', () => {
+    document.getElementById('revisitBtn').addEventListener('click', (e) => { // Renamed
       if (!currentQ) return;
-      if (tricky.includes(currentQ.id)) {
-        tricky = tricky.filter(id => id !== currentQ.id);
+      if (revisit.includes(currentQ.id)) {
+        revisit = revisit.filter(id => id !== currentQ.id);
       } else {
-        tricky.push(currentQ.id);
+        revisit.push(currentQ.id);
       }
-      localStorage.setItem('tricky_qs', JSON.stringify(tricky));
+      localStorage.setItem('revisit_qs', JSON.stringify(revisit));
       renderCurrentQuestion();
+      e.target.blur();
     });
 
-    document.getElementById('reviewBtn').addEventListener('click', () => {
-      if (tricky.length === 0 && !isReviewMode) {
-        alert("Your Tricky List is currently empty!");
+    document.getElementById('reviewBtn').addEventListener('click', (e) => {
+      if (revisit.length === 0 && !isReviewMode) {
+        alert("Your Revisit List is currently empty!");
         return;
       }
       isReviewMode = !isReviewMode;
       updateControlUI();
       pickNextQuestion();
+      e.target.blur();
     });
 
     function updateControlUI() {
