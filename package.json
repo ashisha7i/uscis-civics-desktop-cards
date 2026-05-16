@@ -1,0 +1,20 @@
+{
+  "name": "uscis-desktop-cards",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package-mac": "electron-packager . \"USCIS Civics Flashcards\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=icons/liberty.icns",
+    "package-win": "electron-packager . \"USCIS Civics Flashcards\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=icons/liberty.ico",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Ashish Agnihotri",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^42.1.0",
+    "electron-packager": "^17.1.2"
+  }
+}

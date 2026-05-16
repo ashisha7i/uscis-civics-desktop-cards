@@ -1,0 +1,59 @@
+name: Build Electron Flashcards
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Allows you to manually trigger a build from the GitHub UI
+
+jobs:
+  build-mac:
+    name: Compile macOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Package Mac App
+        run: npm run package-mac
+
+      - name: Upload Mac Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: USCIS-Civics-Flashcards-Mac-Build
+          path: dist/
+          retention-days: 7
+
+  build-windows:
+    name: Compile Windows App
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Package Windows App
+        run: npm run package-win
+
+      - name: Upload Windows Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: USCIS-Civics-Flashcards-Windows-Build
+          path: dist/
+          retention-days: 7
