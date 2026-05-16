@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>USCIS Civics Flashcards</title>
+  <style>
+    :root {
+      --bg-card: #ffffff;
+      --bg-app: #f5f5f7;
+      --text-main: #1d1d1f;
+      --text-muted: #6e6e73;
+      --accent: #007aff;
+      --success: #34c759;
+      --tricky-color: #af52de;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-app);
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* SPACIOUS CONTEMPORARY 3D VIEWPORT */
+    .flashcard-viewport {
+      perspective: 1000px;
+      width: 100%;
+      height: 390px;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: left;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .flashcard-viewport.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      padding: 28px;
+      box-sizing: border-box;
+      backface-visibility: hidden;
+      background: var(--bg-card);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+    }
+
+    /* TYPOGRAPHIC INNER SCHEMATICS */
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .section-tag {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .badge-container { display: flex; gap: 6px; }
+    .badge {
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: white;
+    }
+    .badge.senior { background: #e67e22; }
+    .badge.dynamic { background: #2980b9; }
+    .badge.tricky { background: var(--tricky-color); }
+
+    .question-text {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: #000;
+      margin: auto 0;
+    }
+
+    .question-block-back {
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .question-text-back {
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+
+    .tap-prompt {
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      color: var(--accent);
+      opacity: 0.7;
+      margin-top: auto;
+    }
+
+    /* HIGH-CONTRAST TEXT ONLY REVERSE FRAME */
+    .answers-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 10px;
+      max-height: 210px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .answer-row {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .check-icon {
+      color: var(--success);
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .answers-container::-webkit-scrollbar { width: 4px; }
+    .answers-container::-webkit-scrollbar-track { background: transparent; }
+    .answers-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+
+    /* CONTROLS BUTTON MATRIX PANEL */
+    .controls-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 11px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      color: var(--text-main);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .btn:active { transform: translateY(0); }
+
+    .btn.primary { background: var(--accent); color: white; border: 1px solid var(--accent); }
+    .btn.primary:hover { background: #0066d6; }
+    
+    .btn.active-review { background: #ff3b30; color: white; border: 1px solid #ff3b30; }
+
+    /* FOOTER CONTROL GRID CONTEXT */
+    .footer-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(0,0,0,0.4);
+      margin-top: 16px;
+      padding: 0 4px;
+      text-transform: uppercase;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-container input {
+      cursor: pointer;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="flashcard-viewport" id="cardViewport">
+    <div class="card-inner">
+      
+      <div class="card-front">
+        <div class="meta-row">
+          <span id="frontCategory">Category Loading...</span>
+          <div class="badge-container" id="frontBadges"></div>
+        </div>
+        <div class="question-text" id="frontQuestion">Initializing Workspace...</div>
+        <div class="tap-prompt">Click Card to Reveal Answer</div>
+      </div>
+
+      <div class="card-back">
+        <div class="meta-row">
+          <span id="backCategory">Category Loading...</span>
+          <div class="badge-container" id="backBadgesInfo"></div>
+        </div>
+        
+        <div class="question-block-back">
+          <div class="section-tag">Question Prompt</div>
+          <div class="question-text-back" id="backQuestion">Loading Question...</div>
+        </div>
+        
+        <div class="answers-container" id="backAnswers"></div>
+        
+        <div class="tap-prompt" style="color: rgba(0,0,0,0.3);">Click Card to Flip Back</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="controls-toolbar">
+    <button class="btn" id="trickyBtn">📌 Toggle Tricky</button>
+    <button class="btn" id="reviewBtn">🔄 All Questions</button>
+    <button class="btn primary" id="nextBtn">Next Question →</button>
+  </div>
+
+  <div class="footer-status">
+    <span id="progressText">Progress: 0 / 0</span>
+    
+    <label class="toggle-container">
+      <input type="checkbox" id="alwaysOnTopCheck" checked>
+      <span>Always on Top</span>
+    </label>
+    
+    <span id="trickyCountText">Tricky Bank: 0</span>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+    const path = require('path');
+
+    let questions = [];
+    let currentQ = null;
+    let shown = JSON.parse(localStorage.getItem('shown_qs')) || [];
+    let tricky = JSON.parse(localStorage.getItem('tricky_qs')) || [];
+    let isReviewMode = false;
+
+    // Connect Footer Checkbox State Changes back to Main execution thread via IPC
+    document.getElementById('alwaysOnTopCheck').addEventListener('change', (e) => {
+      ipcRenderer.send('set-always-on-top', e.target.checked);
+    });
+
+    async function init() {
+      try {
+        const fileData = fs.readFileSync(path.join(__dirname, 'questions.json'), 'utf8');
+        questions = JSON.parse(fileData).questions;
+        pickNextQuestion();
+      } catch (e) {
+        document.getElementById('frontQuestion').innerText = "Data Error: Confirm questions.json placement.";
+      }
+    }
+
+    function pickNextQuestion() {
+      if (questions.length === 0) return;
+      document.getElementById('cardViewport').classList.remove('flipped');
+
+      if (isReviewMode) {
+        if (tricky.length === 0) {
+          isReviewMode = false;
+          updateControlUI();
+          pickNextQuestion();
+          return;
+        }
+        const filtered = questions.filter(q => tricky.includes(q.id));
+        currentQ = filtered[Math.floor(Math.random() * filtered.length)];
+      } else {
+        let remaining = questions.filter(q => !shown.includes(q.id));
+        if (remaining.length === 0) {
+          shown = [];
+          remaining = questions;
+        }
+        currentQ = remaining[Math.floor(Math.random() * remaining.length)];
+        if (currentQ && !shown.includes(currentQ.id)) {
+          shown.push(currentQ.id);
+          localStorage.setItem('shown_qs', JSON.stringify(shown));
+        }
+      }
+
+      renderCurrentQuestion();
+    }
+
+    function renderCurrentQuestion() {
+      if (!currentQ) return;
+
+      const titleString = `${currentQ.category} • Q${currentQ.id}`;
+      document.getElementById('frontCategory').innerText = titleString;
+      document.getElementById('backCategory').innerText = titleString;
+      document.getElementById('frontQuestion').innerText = currentQ.question;
+      document.getElementById('backQuestion').innerText = currentQ.question;
+
+      const buildBadges = (elementId) => {
+        const container = document.getElementById(elementId);
+        container.innerHTML = '';
+        if (currentQ.senior_65_20) container.innerHTML += `<span class="badge senior">65/20</span>`;
+        if (currentQ.dynamic) container.innerHTML += `<span class="badge dynamic">Varies</span>`;
+        if (tricky.includes(currentQ.id)) container.innerHTML += `<span class="badge tricky">Tricky</span>`;
+      };
+      
+      buildBadges('frontBadges');
+      buildBadges('backBadgesInfo');
+
+      const ansContainer = document.getElementById('backAnswers');
+      ansContainer.innerHTML = '';
+      currentQ.answers.forEach(ans => {
+        const row = document.createElement('div');
+        row.className = 'answer-row';
+        row.innerHTML = `<span class="check-icon">✔</span><span>${ans}</span>`;
+        ansContainer.appendChild(row);
+      });
+
+      const pct = Math.round((shown.length / questions.length) * 100);
+      document.getElementById('progressText').innerText = `Progress: ${shown.length} / ${questions.length} (${pct}%)`;
+      document.getElementById('trickyCountText').innerText = `Tricky Bank: ${tricky.length}`;
+      
+      const tBtn = document.getElementById('trickyBtn');
+      if (tricky.includes(currentQ.id)) {
+        tBtn.innerText = '📌 Unmark Tricky';
+        tBtn.style.borderLeft = '3px solid var(--tricky-color)';
+      } else {
+        tBtn.innerText = '📌 Mark Tricky';
+        tBtn.style.borderLeft = 'none';
+      }
+    }
+
+    document.getElementById('cardViewport').addEventListener('click', () => {
+      document.getElementById('cardViewport').classList.toggle('flipped');
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', pickNextQuestion);
+
+    document.getElementById('trickyBtn').addEventListener('click', () => {
+      if (!currentQ) return;
+      if (tricky.includes(currentQ.id)) {
+        tricky = tricky.filter(id => id !== currentQ.id);
+      } else {
+        tricky.push(currentQ.id);
+      }
+      localStorage.setItem('tricky_qs', JSON.stringify(tricky));
+      renderCurrentQuestion();
+    });
+
+    document.getElementById('reviewBtn').addEventListener('click', () => {
+      if (tricky.length === 0 && !isReviewMode) {
+        alert("Your Tricky List is currently empty!");
+        return;
+      }
+      isReviewMode = !isReviewMode;
+      updateControlUI();
+      pickNextQuestion();
+    });
+
+    function updateControlUI() {
+      const rBtn = document.getElementById('reviewBtn');
+      if (isReviewMode) {
+        rBtn.innerText = '🔴 Review Mode';
+        rBtn.className = 'btn active-review';
+      } else {
+        rBtn.innerText = '🔄 All Questions';
+        rBtn.className = 'btn';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
