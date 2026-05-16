@@ -1,9 +1,12 @@
-name: Build Electron Flashcards
+name: Build and Release Flashcards
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Allows you to manually trigger a build from the GitHub UI
+  workflow_dispatch:
+
+permissions:
+  contents: write 
 
 jobs:
   build-mac:
@@ -11,12 +14,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6 # UPGRADED: Native Node 24 support
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6 # UPGRADED: Native Node 24 support
         with:
-          node-version: 20
+          node-version: 22 # UPGRADED: Moves build execution off deprecated Node 20
           cache: 'npm'
 
       - name: Install Dependencies
@@ -25,24 +28,28 @@ jobs:
       - name: Package Mac App
         run: npm run package-mac
 
-      - name: Upload Mac Build Artifact
-        uses: actions/upload-artifact@v4
+      - name: Zip Mac App
+        run: |
+          cd dist
+          zip -r ../USCIS-Civics-Flashcards-Mac.zip .
+
+      - name: Upload Mac Zip Artifact
+        uses: actions/upload-artifact@v7 # UPGRADED: Suppresses Node 20 warning layout
         with:
-          name: USCIS-Civics-Flashcards-Mac-Build
-          path: dist/
-          retention-days: 7
+          name: mac-zip
+          path: USCIS-Civics-Flashcards-Mac.zip
 
   build-windows:
     name: Compile Windows App
-    runs-on: windows-latest
+    runs-on: windows-2025 # FIXED: Explicitly maps to the new 2025/2026 VM image to clear redirection notices
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6 # UPGRADED
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6 # UPGRADED
         with:
-          node-version: 20
+          node-version: 22 # UPGRADED
           cache: 'npm'
 
       - name: Install Dependencies
@@ -51,9 +58,47 @@ jobs:
       - name: Package Windows App
         run: npm run package-win
 
-      - name: Upload Windows Build Artifact
-        uses: actions/upload-artifact@v4
+      - name: Zip Windows App
+        shell: powershell
+        run: |
+          Compress-Archive -Path dist\* -DestinationPath USCIS-Civics-Flashcards-Windows.zip
+
+      - name: Upload Windows Zip Artifact
+        uses: actions/upload-artifact@v7 # UPGRADED
         with:
-          name: USCIS-Civics-Flashcards-Windows-Build
-          path: dist/
-          retention-days: 7
+          name: win-zip
+          path: USCIS-Civics-Flashcards-Windows.zip
+
+  publish-release:
+    name: Deploy to GitHub Releases
+    needs: [build-mac, build-windows] 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Mac Zip
+        uses: actions/download-artifact@v8 # UPGRADED: Matches the new upload-artifact v7 storage spec
+        with:
+          name: mac-zip
+          path: .
+
+      - name: Download Windows Zip
+        uses: actions/download-artifact@v8 # UPGRADED
+        with:
+          name: win-zip
+          path: .
+
+      - name: Update GitHub Release Page
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Desktop Builds"
+          body: |
+            Automated production desktop builds for the USCIS Civics Flashcard App.
+            
+            ### 🚀 Installation Notes:
+            * ** macOS:** Download `USCIS-Civics-Flashcards-Mac.zip`, unzip it, and run `xattr -cr` in Terminal if blocked by Gatekeeper.
+            * **❖ Windows:** Download `USCIS-Civics-Flashcards-Windows.zip`, extract the folder, and select *More Info* -> *Run Anyway* if SmartScreen flags it.
+          draft: false
+          prerelease: false
+          files: |
+            USCIS-Civics-Flashcards-Mac.zip
+            USCIS-Civics-Flashcards-Windows.zip
