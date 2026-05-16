@@ -2,7 +2,7 @@ name: Build and Release Flashcards
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -10,46 +10,63 @@ permissions:
 
 jobs:
   build-mac:
-    name: Compile macOS App
+    name: Compile macOS Apps
     runs-on: macos-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6 # UPGRADED: Native Node 24 support
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6 # UPGRADED: Native Node 24 support
+        uses: actions/setup-node@v6
         with:
-          node-version: 22 # UPGRADED: Moves build execution off deprecated Node 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
 
-      - name: Package Mac App
-        run: npm run package-mac
+      # PASS 1: Compiles strictly for M1/M2/M3/M4 Apple Silicon Chips
+      - name: Package Mac App (Apple Silicon)
+        run: npx electron-packager . "USCIS Civics Flashcards" --platform=darwin --arch=arm64 --out=dist/arm64 --overwrite --icon=icons/liberty.icns
 
-      - name: Zip Mac App
+      # PASS 2: Compiles strictly for legacy Intel Core Chips
+      - name: Package Mac App (Intel)
+        run: npx electron-packager . "USCIS Civics Flashcards" --platform=darwin --arch=x64 --out=dist/x64 --overwrite --icon=icons/liberty.icns
+
+      - name: Zip Mac Apple Silicon App
         run: |
-          cd dist
-          zip -r ../USCIS-Civics-Flashcards-Mac.zip .
+          cd dist/arm64
+          zip -r ../../USCIS-Civics-Flashcards-Mac-AppleSilicon.zip .
 
-      - name: Upload Mac Zip Artifact
-        uses: actions/upload-artifact@v7 # UPGRADED: Suppresses Node 20 warning layout
+      - name: Zip Mac Intel App
+        run: |
+          cd dist/x64
+          zip -r ../../USCIS-Civics-Flashcards-Mac-Intel.zip .
+
+       Tariffs-safe staging upload loops
+      - name: Upload Mac Apple Silicon Zip Artifact
+        uses: actions/upload-artifact@v7
         with:
-          name: mac-zip
-          path: USCIS-Civics-Flashcards-Mac.zip
+          name: mac-arm64-zip
+          path: USCIS-Civics-Flashcards-Mac-AppleSilicon.zip
+
+      - name: Upload Mac Intel Zip Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: mac-x64-zip
+          path: USCIS-Civics-Flashcards-Mac-Intel.zip
 
   build-windows:
     name: Compile Windows App
-    runs-on: windows-2025 # FIXED: Explicitly maps to the new 2025/2026 VM image to clear redirection notices
+    runs-on: windows-2025
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6 # UPGRADED
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6 # UPGRADED
+        uses: actions/setup-node@v6
         with:
-          node-version: 22 # UPGRADED
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -64,7 +81,7 @@ jobs:
           Compress-Archive -Path dist\* -DestinationPath USCIS-Civics-Flashcards-Windows.zip
 
       - name: Upload Windows Zip Artifact
-        uses: actions/upload-artifact@v7 # UPGRADED
+        uses: actions/upload-artifact@v7
         with:
           name: win-zip
           path: USCIS-Civics-Flashcards-Windows.zip
@@ -74,31 +91,57 @@ jobs:
     needs: [build-mac, build-windows] 
     runs-on: ubuntu-latest
     steps:
-      - name: Download Mac Zip
-        uses: actions/download-artifact@v8 # UPGRADED: Matches the new upload-artifact v7 storage spec
+      - name: Checkout Repository
+        uses: actions/checkout@v6
         with:
-          name: mac-zip
+          fetch-depth: 0
+
+      - name: Calculate Next Version Tag
+        id: versioning
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          CLEAN_TAG=${LATEST_TAG#v}
+          IFS='.' read -r major minor patch <<< "$CLEAN_TAG"
+          NEW_PATCH=$((patch + 1))
+          NEW_TAG="v$major.$minor.$NEW_PATCH"
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "Next release version calculated: $NEW_TAG"
+
+      - name: Download Mac Apple Silicon Zip
+        uses: actions/download-artifact@v8
+        with:
+          name: mac-arm64-zip
+          path: .
+
+      - name: Download Mac Intel Zip
+        uses: actions/download-artifact@v8
+        with:
+          name: mac-x64-zip
           path: .
 
       - name: Download Windows Zip
-        uses: actions/download-artifact@v8 # UPGRADED
+        uses: actions/download-artifact@v8
         with:
           name: win-zip
           path: .
 
       - name: Update GitHub Release Page
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: latest
-          name: "Latest Desktop Builds"
+          tag_name: ${{ steps.versioning.outputs.tag }}
+          name: "Desktop Builds ${{ steps.versioning.outputs.tag }}"
           body: |
-            Automated production desktop builds for the USCIS Civics Flashcard App.
+            Automated production desktop builds for version ${{ steps.versioning.outputs.tag }}.
             
             ### 🚀 Installation Notes:
-            * ** macOS:** Download `USCIS-Civics-Flashcards-Mac.zip`, unzip it, and run `xattr -cr` in Terminal if blocked by Gatekeeper.
+            * ** macOS (Apple Silicon M1/M2/M3/M4):** Download `USCIS-Civics-Flashcards-Mac-AppleSilicon.zip`.
+            * ** macOS (Intel):** Download `USCIS-Civics-Flashcards-Mac-Intel.zip`.
+            * *Note for Mac users:* Unzip your respective architecture file, and run `xattr -cr` in Terminal if blocked by Gatekeeper.
             * **❖ Windows:** Download `USCIS-Civics-Flashcards-Windows.zip`, extract the folder, and select *More Info* -> *Run Anyway* if SmartScreen flags it.
           draft: false
           prerelease: false
           files: |
-            USCIS-Civics-Flashcards-Mac.zip
+            USCIS-Civics-Flashcards-Mac-AppleSilicon.zip
+            USCIS-Civics-Flashcards-Mac-Intel.zip
             USCIS-Civics-Flashcards-Windows.zip
