@@ -9,8 +9,40 @@ permissions:
   contents: write 
 
 jobs:
+  # JOB 1: CALCULATE NEXT SEMANTIC VERSION AHEAD OF WORKER COMPILATION PASSES
+  prepare-version:
+    name: Calculate Version Tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.versioning.outputs.tag }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Calculate Next Version Tag
+        id: versioning
+        run: |
+          git fetch --tags --force
+          LATEST_TAG=$(git tag -l "v*.*.*" | sort -V | tail -n1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            NEW_TAG="v0.0.1"
+          else
+            CLEAN_TAG=${LATEST_TAG#v}
+            IFS='.' read -r major minor patch <<< "$CLEAN_TAG"
+            NEW_PATCH=$((patch + 1))
+            NEW_TAG="v$major.$minor.$NEW_PATCH"
+          fi
+          
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "Next version targeted: $NEW_TAG"
+
+  # JOB 2: COMPILE MAC OS BUILDS WITH INTEGRATED DYNAMIC VERSION
   build-mac:
     name: Compile macOS Apps
+    needs: prepare-version
     runs-on: macos-latest
     steps:
       - name: Checkout Repository
@@ -24,6 +56,11 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
+
+      - name: Inject Version into Node Configuration Manifest
+        run: |
+          CLEAN_VERSION=$(echo "${{ needs.prepare-version.outputs.tag }}" | sed 's/^v//')
+          npm version $CLEAN_VERSION --no-git-tag-version
 
       - name: Package Mac App (Apple Silicon)
         run: npx electron-packager . "USCIS Civics Flashcards" --platform=darwin --arch=arm64 --out=dist/arm64 --overwrite --icon=icons/liberty.icns
@@ -53,9 +90,11 @@ jobs:
           name: mac-x64-zip
           path: USCIS-Civics-Flashcards-Mac-Intel.zip
 
+  # JOB 3: COMPILE WINDOWS EXECUTABLE WITH INTEGRATED DYNAMIC VERSION
   build-windows:
     name: Compile Windows App
-    runs-on: windows-2025
+    needs: prepare-version
+    runs-on: windows-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -68,6 +107,12 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
+
+      - name: Inject Version into Node Configuration Manifest
+        shell: bash
+        run: |
+          CLEAN_VERSION=$(echo "${{ needs.prepare-version.outputs.tag }}" | sed 's/^v//')
+          npm version $CLEAN_VERSION --no-git-tag-version
 
       - name: Package Windows App
         run: npm run package-win
@@ -83,37 +128,14 @@ jobs:
           name: win-zip
           path: USCIS-Civics-Flashcards-Windows.zip
 
+  # JOB 4: DEPLOY FINISHED BINARIES OUT TO THE GITHUB RELEASE SYSTEM
   publish-release:
     name: Deploy to GitHub Releases
-    needs: [build-mac, build-windows] 
+    needs: [prepare-version, build-mac, build-windows] 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0 # Fetches full history so git can scan past tags cleanly
-
-      # HARDENED VERSION CALCULATION ENGINE
-      - name: Calculate Next Version Tag
-        id: versioning
-        run: |
-          git fetch --tags --force
-          # Filter strictly for tags matching the vX.X.X pattern, sort them by version, and pull the highest one
-          LATEST_TAG=$(git tag -l "v*.*.*" | sort -V | tail -n1)
-          
-          if [ -z "$LATEST_TAG" ]; then
-            # If no version tags exist in the entire repository, start clean at v0.0.1
-            NEW_TAG="v0.0.1"
-          else
-            # Strip the 'v' prefix, parse digits, and increment the patch version (+1)
-            CLEAN_TAG=${LATEST_TAG#v}
-            IFS='.' read -r major minor patch <<< "$CLEAN_TAG"
-            NEW_PATCH=$((patch + 1))
-            NEW_TAG="v$major.$minor.$NEW_PATCH"
-          fi
-          
-          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
-          echo "Version calculated successfully: $NEW_TAG"
 
       - name: Download Mac Apple Silicon Zip
         uses: actions/download-artifact@v8
@@ -134,12 +156,12 @@ jobs:
           path: .
 
       - name: Update GitHub Release Page
-        uses: softprops/action-gh-release@v2   # Pinning back to verified stable release engine
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.versioning.outputs.tag }}
-          name: "Desktop Builds ${{ steps.versioning.outputs.tag }}"
+          tag_name: ${{ needs.prepare-version.outputs.tag }}
+          name: "Desktop Builds ${{ needs.needs.prepare-version.outputs.tag }}"
           body: |
-            Automated production desktop builds for version ${{ steps.versioning.outputs.tag }}.
+            Automated production desktop builds for version ${{ needs.prepare-version.outputs.tag }}.
             
             ### 🚀 Installation Notes:
             * ** macOS (Apple Silicon M1/M2/M3/M4):** Download `USCIS-Civics-Flashcards-Mac-AppleSilicon.zip`.
