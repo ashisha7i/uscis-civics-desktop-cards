@@ -1,36 +1,40 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 650,
-    height: 555,           // Increased slightly to accommodate the native title bar
-    alwaysOnTop: true,     // Starts up floating by default
-    frame: true,           // NATIVE WINDOW FRAME RESTORED (Enables standard OS close/minimize/drag)
-    transparent: false,    // Set to false for standard native OS window backgrounds
-    resizable: true,
-    hasShadow: true,
+let mainWindow;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 600,
+    height: 580, // Optimized default starting height
+    minWidth: 480,
+    minHeight: 520, // Prevents UI elements from overlapping if scaled down
+    resizable: true, // Enabled dynamic layout scaling
+    alwaysOnTop: true,
+    frame: true,
+    show: false,
+    title: "USCIS Civics Flashcards",
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
     }
   });
 
-  win.loadFile('index.html');
+  mainWindow.loadFile('index.html');
+  mainWindow.setMenuBarVisibility(false);
 
-  // Dynamic IPC Bridge: Listens for the footer toggle checkbox from index.html
-  ipcMain.on('set-always-on-top', (event, isAlwaysOnTop) => {
-    win.setAlwaysOnTop(isAlwaysOnTop);
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 }
 
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+ipcMain.on('set-always-on-top', (event, value) => {
+  if (mainWindow) {
+    mainWindow.setAlwaysOnTop(value);
+  }
 });
+
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

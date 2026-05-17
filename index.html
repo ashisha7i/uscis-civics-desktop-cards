@@ -14,6 +14,7 @@
       --revisit-color: #af52de;
     }
 
+    /* CONVERTED BODY TO A FLUID VIEWPORT RESPONSIVE CONTAINER */
     body {
       margin: 0;
       padding: 20px;
@@ -21,33 +22,64 @@
       background: var(--bg-app);
       user-select: none;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
     }
 
-    /* SPACIOUS CONTEMPORARY 3D VIEWPORT */
+    .splash-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--bg-app);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 1;
+      transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .splash-screen.fade-out { opacity: 0; pointer-events: none; }
+    .splash-logo { font-size: 56px; margin-bottom: 16px; animation: splashPulse 2s infinite ease-in-out; }
+    .splash-title { font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.3px; margin-bottom: 28px; }
+    .splash-loader { width: 20px; height: 20px; border: 2.5px solid rgba(0, 122, 255, 0.1); border-top-color: var(--accent); border-radius: 50%; animation: loaderSpin 0.7s linear infinite; }
+
+    @keyframes loaderSpin { to { transform: rotate(360deg); } }
+    @keyframes splashPulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.04); opacity: 1; }
+    }
+
+    /* CARD VIEWPORT NOW DYNAMICALLY FILLS ALL AVAILABLE HEIGHT */
     .flashcard-viewport {
       perspective: 1000px;
       width: 100%;
-      height: 390px;
+      flex: 1; /* Dynamically consumes empty vertical space */
       cursor: pointer;
+      transition: opacity 0.15s ease-in-out, transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+      transform: translateX(0);
+      margin-bottom: 5px;
     }
+
+    .flashcard-viewport.slide-out-left { opacity: 0; transform: translateX(-150px); }
+    .flashcard-viewport.slide-out-right { opacity: 0; transform: translateX(150px); }
+    .flashcard-viewport.slide-in-right { transition: none !important; opacity: 0; transform: translateX(150px); }
+    .flashcard-viewport.slide-in-left { transition: none !important; opacity: 0; transform: translateX(-150px); }
 
     .card-inner {
       position: relative;
-      width: 100%;
-      height: 100%;
-      text-align: left;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%; height: 100%;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       transform-style: preserve-3d;
     }
 
-    .flashcard-viewport.flipped .card-inner {
-      transform: rotateY(180deg);
-    }
+    .flashcard-viewport.flipped .card-inner { transform: rotateY(180deg); }
 
     .card-front, .card-back {
       position: absolute;
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       padding: 28px;
       box-sizing: border-box;
       backface-visibility: hidden;
@@ -59,207 +91,105 @@
       flex-direction: column;
     }
 
-    .card-back {
-      transform: rotateY(180deg);
-    }
+    .card-back { transform: rotateY(180deg); }
 
-    /* TYPOGRAPHIC INNER SCHEMATICS */
     .meta-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-    }
-
-    .section-tag {
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      color: var(--accent);
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .badge-container { display: flex; gap: 6px; }
-    .badge {
-      font-size: 9px;
-      padding: 2px 8px;
-      border-radius: 6px;
-      color: white;
-    }
-    .badge.senior { background: #e67e22; }
-    .badge.dynamic { background: #2980b9; }
-    .badge.revisit { background: var(--revisit-color); }
-
-    .question-text {
-      font-size: 24px;
-      font-weight: 700;
-      line-height: 1.4;
-      color: #000;
-      margin: auto 0;
-    }
-
-    .question-block-back {
-      margin-bottom: 20px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid rgba(0,0,0,0.06);
-    }
-
-    .question-text-back {
-      font-size: 15px;
-      font-weight: 500;
-      line-height: 1.45;
-      color: var(--text-muted);
-    }
-
-    .tap-prompt {
-      font-size: 11px;
-      font-weight: 600;
-      text-align: center;
-      color: var(--accent);
-      opacity: 0.7;
-      margin-top: auto;
-    }
-
-    /* HIGH-CONTRAST TEXT ONLY REVERSE FRAME */
-    .answers-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 10px;
-      max-height: 210px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .answer-row {
-      font-size: 16px;
-      font-weight: 600;
-      line-height: 1.4;
-      color: var(--text-main);
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .check-icon {
-      color: var(--success);
-      font-weight: 800;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; color: var(--text-muted);
       flex-shrink: 0;
     }
+
+    .badge { font-size: 9px; padding: 2px 8px; border-radius: 6px; color: white; }
+    .badge.senior { background: #e67e22; }
+    .badge.revisit { background: var(--revisit-color); }
+
+    .question-text { font-size: 24px; font-weight: 700; line-height: 1.4; color: #000; margin: auto 0; }
+    .question-block-back { display: flex; flex-direction: column; margin-bottom: 12px; flex-shrink: 0; }
+    .question-text-back { font-size: 15px; font-weight: 500; line-height: 1.45; color: var(--text-muted); }
+
+    .tap-prompt { font-size: 11px; font-weight: 600; text-align: center; color: var(--accent); opacity: 0.7; margin-top: auto; flex-shrink: 0; }
+
+    /* ANSWERS CONTAINER GROWS WITH FLEX CHANGES */
+    .answers-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; flex: 1; overflow-y: auto; }
+    .answer-row { font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--text-main); display: flex; gap: 10px; }
+    .check-icon { color: var(--success); font-weight: 800; }
 
     .answers-container::-webkit-scrollbar { width: 4px; }
     .answers-container::-webkit-scrollbar-track { background: transparent; }
     .answers-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
 
-    /* CONTROLS BUTTON MATRIX PANEL */
-    .controls-toolbar {
-      display: flex;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 11px 14px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 700;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: #ffffff;
-      color: var(--text-main);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      border: 1px solid rgba(0,0,0,0.08);
-    }
+    .controls-toolbar { display: flex; gap: 10px; margin-top: 10px; flex-shrink: 0; }
+    .btn { flex: 1; padding: 11px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s ease; background: #ffffff; color: var(--text-main); border: 1px solid rgba(0,0,0,0.08); white-space: nowrap; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .btn:active { transform: translateY(0); }
-    .btn:focus { outline: none; }
-
     .btn.primary { background: var(--accent); color: white; border: 1px solid var(--accent); }
-    .btn.primary:hover { background: #0066d6; }
-    
     .btn.active-review { background: #ff3b30; color: white; border: 1px solid #ff3b30; }
 
-    /* FOOTER CONTROL GRID CONTEXT */
-    .footer-status {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 10px;
-      font-weight: 700;
-      color: rgba(0,0,0,0.4);
-      margin-top: 16px;
-      padding: 0 4px;
-      text-transform: uppercase;
+    .footer-status { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.4); margin-top: 14px; padding: 0 4px; flex-shrink: 0; }
+    .toggle-container { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    
+    .footer-right-group { display: flex; align-items: center; gap: 15px; }
+    .about-btn { 
+      background: rgba(0,122,255,0.1); color: var(--accent); 
+      padding: 4px 10px; border-radius: 8px; cursor: pointer;
+      transition: background 0.2s; font-size: 10px; border: 1px solid rgba(0,122,255,0.15);
     }
+    .about-btn:hover { background: rgba(0,122,255,0.2); }
 
-    .toggle-container {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .toggle-container input {
-      cursor: pointer;
-      margin: 0;
-    }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-card { background: white; padding: 32px; border-radius: 24px; width: 320px; text-align: center; transform: scale(0.9); transition: transform 0.2s; }
+    .modal-overlay.active .modal-card { transform: scale(1); }
+    .modal-version { color: var(--accent); font-weight: 800; margin: 10px 0; display: block; }
   </style>
 </head>
 <body>
 
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-logo">🇺🇸</div>
+    <div class="splash-title">USCIS Civics Flashcards</div>
+    <div class="splash-loader"></div>
+  </div>
+
   <div class="flashcard-viewport" id="cardViewport">
     <div class="card-inner">
-      
       <div class="card-front">
-        <div class="meta-row">
-          <span id="frontCategory">Category Loading...</span>
-          <div class="badge-container" id="frontBadges"></div>
-        </div>
-        <div class="question-text" id="frontQuestion">Initializing Workspace...</div>
-        <div class="tap-prompt">💡 Space to Flip • Enter / ➔ for Next • ➔ for Back</div>
+        <div class="meta-row"><span id="frontCategory">...</span><div id="frontBadges"></div></div>
+        <div class="question-text" id="frontQuestion">Initializing...</div>
+        <div class="tap-prompt">💡 Space to Flip • Arrows / Buttons to Navigate</div>
       </div>
-
       <div class="card-back">
-        <div class="meta-row">
-          <span id="backCategory">Category Loading...</span>
-          <div class="badge-container" id="backBadgesInfo"></div>
-        </div>
-        
-        <div class="question-block-back">
-          <div class="section-tag">Question Prompt</div>
-          <div class="question-text-back" id="backQuestion">Loading Question...</div>
-        </div>
-        
+        <div class="meta-row"><span id="backCategory">...</span><div id="backBadgesInfo"></div></div>
+        <div class="question-block-back"><div class="question-text-back" id="backQuestion">...</div></div>
         <div class="answers-container" id="backAnswers"></div>
-        
-        <div class="tap-prompt" style="color: rgba(0,0,0,0.3);">Space to Flip • Enter / ➔ for Next • ➔ for Back</div>
+        <div class="tap-prompt">Press SPACE to flip back</div>
       </div>
-
     </div>
   </div>
 
   <div class="controls-toolbar">
-    <button class="btn" id="revisitBtn">📌 Revisit</button> <button class="btn" id="reviewBtn">🔄 All Questions</button>
-    <button class="btn primary" id="nextBtn">Next Question →</button>
+    <button class="btn" id="revisitBtn">📌 Revisit</button>
+    <button class="btn" id="reviewBtn">🔄 All Questions</button>
+    <button class="btn primary" id="prevBtn">← Prev</button>
+    <button class="btn primary" id="nextBtn">Next →</button>
   </div>
 
   <div class="footer-status">
-    <span id="progressText">Progress: 0 / 0</span>
-    
-    <label class="toggle-container">
-      <input type="checkbox" id="alwaysOnTopCheck" checked>
-      <span>Always on Top</span>
-    </label>
-    
-    <span id="revisitCountText">Revisit Bank: 0</span>
+    <span id="progressText">Progress: 0%</span>
+    <label class="toggle-container"><input type="checkbox" id="alwaysOnTopCheck" checked><span>Always on Top</span></label>
+    <div class="footer-right-group">
+      <span id="revisitCountText">Revisit: 0</span>
+      <div class="about-btn" id="aboutTrigger">ⓘ About App</div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="aboutModal">
+    <div class="modal-card">
+      <h2 style="margin:0; font-size:20px;">USCIS Flashcards</h2>
+      <span class="modal-version">Desktop Build v0.0.1</span>
+      <p style="color:var(--text-muted); font-size:13px; line-height:1.6;">A high-retention 3D flashcard workspace for naturalization prep.<br><br>Developed by ashisha7i</p>
+      <button class="btn primary" style="width:100%;" id="modalCloseBtn">Close</button>
+    </div>
   </div>
 
   <script>
@@ -267,15 +197,10 @@
     const fs = require('fs');
     const path = require('path');
 
-    let questions = [];
-    let currentQ = null;
+    let questions = [], currentQ = null, isReviewMode = false, isSplashActive = true;
     let shown = JSON.parse(localStorage.getItem('shown_qs')) || [];
-    let revisit = JSON.parse(localStorage.getItem('revisit_qs')) || JSON.parse(localStorage.getItem('tricky_qs')) || [];
-    let isReviewMode = false;
-
-    // SEQUENTIAL BACK-AND-FORTH HISTORY ENGINE VARIABLES
-    let sessionHistory = [];
-    let sessionIndex = -1;
+    let revisit = JSON.parse(localStorage.getItem('revisit_qs')) || [];
+    let sessionHistory = [], sessionIndex = -1;
 
     document.getElementById('alwaysOnTopCheck').addEventListener('change', (e) => {
       ipcRenderer.send('set-always-on-top', e.target.checked);
@@ -284,187 +209,113 @@
 
     async function init() {
       try {
-        const fileData = fs.readFileSync(path.join(__dirname, 'questions.json'), 'utf8');
-        questions = JSON.parse(fileData).questions;
-        pickNextQuestion();
-      } catch (e) {
-        document.getElementById('frontQuestion').innerText = "Data Error: Confirm questions.json placement.";
-      }
+        questions = JSON.parse(fs.readFileSync(path.join(__dirname, 'questions.json'), 'utf8')).questions;
+        executePickNextQuestion(true);
+        
+        setTimeout(() => {
+          const splash = document.getElementById('splashScreen');
+          splash.classList.add('fade-out');
+          isSplashActive = false;
+        }, 1400);
+
+      } catch (e) { document.getElementById('frontQuestion').innerText = "Data Error"; }
     }
 
     function toggleCardFlip() {
+      if (isSplashActive || document.getElementById('aboutModal').classList.contains('active')) return;
       document.getElementById('cardViewport').classList.toggle('flipped');
     }
 
-    // LINEAR NAVIGATION CONTROLLERS
+    function runTransition(direction, mutator) {
+      const v = document.getElementById('cardViewport');
+      const outC = direction === 'next' ? 'slide-out-left' : 'slide-out-right';
+      const inC = direction === 'next' ? 'slide-in-right' : 'slide-in-left';
+      v.classList.add(outC);
+      setTimeout(() => {
+        mutator();
+        v.classList.remove('flipped');
+        renderCurrentQuestion();
+        v.classList.remove(outC);
+        v.classList.add(inC);
+        v.offsetHeight;
+        v.classList.remove(inC);
+      }, 150);
+    }
+
+    // SCULATION DIRECTION MATRIX PASSES
     function moveForward() {
       if (sessionIndex < sessionHistory.length - 1) {
-        sessionIndex++;
-        currentQ = questions.find(q => q.id === sessionHistory[sessionIndex]);
-        document.getElementById('cardViewport').classList.remove('flipped');
-        renderCurrentQuestion();
-      } else {
-        pickNextQuestion();
-      }
+        runTransition('next', () => { sessionIndex++; currentQ = questions.find(q => q.id === sessionHistory[sessionIndex]); });
+      } else { runTransition('next', () => executePickNextQuestion(false)); }
     }
 
     function moveBackward() {
-      if (sessionIndex > 0) {
-        sessionIndex--;
-        currentQ = questions.find(q => q.id === sessionHistory[sessionIndex]);
-        document.getElementById('cardViewport').classList.remove('flipped');
-        renderCurrentQuestion();
-      }
+      if (sessionIndex > 0) { runTransition('prev', () => { sessionIndex--; currentQ = questions.find(q => q.id === sessionHistory[sessionIndex]); }); }
     }
 
-    // KEYBOARD DRIVEN HOTKEY DISPATCH MATRIX
     window.addEventListener('keydown', (e) => {
-      if (document.activeElement && document.activeElement.id === 'alwaysOnTopCheck') {
-        return;
-      }
-      
-      switch(e.code) {
-        case 'Space':
-          e.preventDefault();
-          toggleCardFlip();
-          break;
-        case 'Enter':
-          e.preventDefault();
-          moveForward();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          moveForward();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          moveBackward();
-          break;
-      }
+      if (isSplashActive) { e.preventDefault(); return; }
+      if (document.getElementById('aboutModal').classList.contains('active')) { if (e.code === 'Escape') closeAboutModal(); return; }
+      if (document.activeElement && document.activeElement.id === 'alwaysOnTopCheck') return;
+      if (e.code === 'Space') { e.preventDefault(); toggleCardFlip(); }
+      if (e.code === 'Enter' || e.code === 'ArrowRight') { e.preventDefault(); moveForward(); }
+      if (e.code === 'ArrowLeft') { e.preventDefault(); moveBackward(); }
     });
 
-    function pickNextQuestion() {
-      if (questions.length === 0) return;
-      document.getElementById('cardViewport').classList.remove('flipped');
-
+    function executePickNextQuestion(isInitial) {
       if (isReviewMode) {
-        if (revisit.length === 0) {
-          isReviewMode = false;
-          updateControlUI();
-          sessionHistory = [];
-          sessionIndex = -1;
-          pickNextQuestion();
-          return;
-        }
-        const filtered = questions.filter(q => revisit.includes(q.id));
-        currentQ = filtered[Math.floor(Math.random() * filtered.length)];
+        if (revisit.length === 0) { isReviewMode = false; updateControlUI(); executePickNextQuestion(isInitial); return; }
+        const f = questions.filter(q => revisit.includes(q.id));
+        currentQ = f[Math.floor(Math.random() * f.length)];
       } else {
-        let remaining = questions.filter(q => !shown.includes(q.id));
-        if (remaining.length === 0) {
-          shown = [];
-          remaining = questions;
-        }
-        currentQ = remaining[Math.floor(Math.random() * remaining.length)];
-        if (currentQ && !shown.includes(currentQ.id)) {
-          shown.push(currentQ.id);
-          localStorage.setItem('shown_qs', JSON.stringify(shown));
-        }
+        let r = questions.filter(q => !shown.includes(q.id));
+        if (r.length === 0) { shown = []; r = questions; }
+        currentQ = r[Math.floor(Math.random() * r.length)];
+        if (currentQ && !shown.includes(currentQ.id)) { shown.push(currentQ.id); localStorage.setItem('shown_qs', JSON.stringify(shown)); }
       }
-
-      if (currentQ) {
-        sessionHistory.push(currentQ.id);
-        sessionIndex = sessionHistory.length - 1;
-        renderCurrentQuestion();
-      }
+      if (currentQ) { sessionHistory.push(currentQ.id); sessionIndex = sessionHistory.length - 1; if (isInitial) renderCurrentQuestion(); }
     }
 
     function renderCurrentQuestion() {
       if (!currentQ) return;
-
-      const titleString = `${currentQ.category} • Q${currentQ.id}`;
-      document.getElementById('frontCategory').innerText = titleString;
-      document.getElementById('backCategory').innerText = titleString;
+      document.getElementById('frontCategory').innerText = `${currentQ.category} • Q${currentQ.id}`;
+      document.getElementById('backCategory').innerText = `${currentQ.category} • Q${currentQ.id}`;
       document.getElementById('frontQuestion').innerText = currentQ.question;
       document.getElementById('backQuestion').innerText = currentQ.question;
-
-      const buildBadges = (elementId) => {
-        const container = document.getElementById(elementId);
-        container.innerHTML = '';
-        if (currentQ.senior_65_20) container.innerHTML += `<span class="badge senior">65/20</span>`;
-        if (currentQ.dynamic) container.innerHTML += `<span class="badge dynamic">Varies</span>`;
-        if (revisit.includes(currentQ.id)) container.innerHTML += `<span class="badge revisit">Revisit</span>`;
+      const b = (id) => {
+        const c = document.getElementById(id); c.innerHTML = '';
+        if (currentQ.senior_65_20) c.innerHTML += `<span class="badge senior">65/20</span>`;
+        if (revisit.includes(currentQ.id)) c.innerHTML += `<span class="badge revisit">Revisit</span>`;
       };
-      
-      buildBadges('frontBadges');
-      buildBadges('backBadgesInfo');
-
-      const ansContainer = document.getElementById('backAnswers');
-      ansContainer.innerHTML = '';
-      currentQ.answers.forEach(ans => {
-        const row = document.createElement('div');
-        row.className = 'answer-row';
-        row.innerHTML = `<span class="check-icon">✔</span><span>${ans}</span>`;
-        ansContainer.appendChild(row);
-      });
-
-      const pct = Math.round((shown.length / questions.length) * 100);
-      document.getElementById('progressText').innerText = `Progress: ${shown.length} / ${questions.length} (${pct}%)`;
-      document.getElementById('revisitCountText').innerText = `Revisit Bank: ${revisit.length}`;
-      
-      const rBtn = document.getElementById('revisitBtn');
-      if (revisit.includes(currentQ.id)) {
-        rBtn.innerText = '📌 Unmark Revisit'; // Clean operational toggle
-        rBtn.style.borderLeft = '3px solid var(--revisit-color)';
-      } else {
-        rBtn.innerText = '📌 Revisit';        // Clean operational default
-        rBtn.style.borderLeft = 'none';
-      }
+      b('frontBadges'); b('backBadgesInfo');
+      const ac = document.getElementById('backAnswers'); ac.innerHTML = '';
+      currentQ.answers.forEach(a => { const r = document.createElement('div'); r.className = 'answer-row'; r.innerHTML = `<span class="check-icon">✔</span><span>${a}</span>`; ac.appendChild(r); });
+      document.getElementById('progressText').innerText = `Progress: ${Math.round((shown.length / questions.length) * 100)}%`;
+      document.getElementById('revisitCountText').innerText = `Revisit: ${revisit.length}`;
+      document.getElementById('revisitBtn').innerText = revisit.includes(currentQ.id) ? '📌 Unmark Revisit' : '📌 Revisit';
     }
 
+    function openAboutModal() { if (isSplashActive) return; document.getElementById('aboutModal').classList.add('active'); }
+    function closeAboutModal() { document.getElementById('aboutModal').classList.remove('active'); }
+    document.getElementById('aboutTrigger').addEventListener('click', openAboutModal);
+    document.getElementById('modalCloseBtn').addEventListener('click', closeAboutModal);
+    document.getElementById('aboutModal').addEventListener('click', (e) => { if (e.target.id === 'aboutModal') closeAboutModal(); });
     document.getElementById('cardViewport').addEventListener('click', toggleCardFlip);
-
-    document.getElementById('nextBtn').addEventListener('click', (e) => {
-      moveForward();
-      e.target.blur();
-    });
-
+    
+    document.getElementById('nextBtn').addEventListener('click', (e) => { moveForward(); e.target.blur(); });
+    document.getElementById('prevBtn').addEventListener('click', (e) => { moveBackward(); e.target.blur(); });
+    
     document.getElementById('revisitBtn').addEventListener('click', (e) => {
-      if (!currentQ) return;
-      if (revisit.includes(currentQ.id)) {
-        revisit = revisit.filter(id => id !== currentQ.id);
-      } else {
-        revisit.push(currentQ.id);
-      }
-      localStorage.setItem('revisit_qs', JSON.stringify(revisit));
-      renderCurrentQuestion();
-      e.target.blur();
+      if (revisit.includes(currentQ.id)) revisit = revisit.filter(id => id !== currentQ.id);
+      else revisit.push(currentQ.id);
+      localStorage.setItem('revisit_qs', JSON.stringify(revisit)); renderCurrentQuestion(); e.target.blur();
     });
-
     document.getElementById('reviewBtn').addEventListener('click', (e) => {
-      if (revisit.length === 0 && !isReviewMode) {
-        alert("Your Revisit List is currently empty!");
-        return;
-      }
-      isReviewMode = !isReviewMode;
-      updateControlUI();
-      // Reset navigation vectors when switching core study modes
-      sessionHistory = [];
-      sessionIndex = -1;
-      pickNextQuestion();
-      e.target.blur();
+      if (revisit.length === 0 && !isReviewMode) { alert("Revisit list is empty!"); return; }
+      isReviewMode = !isReviewMode; updateControlUI(); sessionHistory = []; sessionIndex = -1;
+      runTransition('next', () => executePickNextQuestion(false)); e.target.blur();
     });
-
-    function updateControlUI() {
-      const rBtn = document.getElementById('reviewBtn');
-      if (isReviewMode) {
-        rBtn.innerText = '🔴 Review Mode';
-        rBtn.className = 'btn active-review';
-      } else {
-        rBtn.innerText = '🔄 All Questions';
-        rBtn.className = 'btn';
-      }
-    }
-
+    function updateControlUI() { const b = document.getElementById('reviewBtn'); if (isReviewMode) { b.innerText = '🔴 Review Mode'; b.className = 'btn active-review'; } else { b.innerText = '🔄 All Questions'; b.className = 'btn'; } }
     init();
   </script>
 </body>
